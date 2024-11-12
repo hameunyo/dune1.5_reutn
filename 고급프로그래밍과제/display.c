@@ -49,7 +49,7 @@ void display(
 void display_resource(RESOURCE resource) {
     set_color(COLOR_RESOURCE);
     gotoxy(resource_pos);
-    printf("spice = %d/%d, population=%d/%d\n",
+    printf("스파이스 = %d/%d, 인구 = %d/%d\n",
         resource.spice, resource.spice_max,
         resource.population, resource.population_max
     );
@@ -59,21 +59,21 @@ void display_resource(RESOURCE resource) {
 void display_system_message(void) {
     set_color(COLOR_DEFAULT);
     gotoxy(system_message_pos);
-    printf("[System Message] All systems operational\n"); // 예시 메시지
+    printf("[시스템 메시지] 모든 시스템이 정상 작동 중입니다\n"); // 예시 메시지
 }
 
 // 선택된 유닛/건물의 정보를 표시하는 함수 (오른쪽 상단)
 void display_status(void) {
     set_color(COLOR_DEFAULT);
     gotoxy(status_pos);
-    printf("[Status] Selected Unit: None\n"); // 선택된 유닛 정보
+    printf("[상태] 선택된 유닛: 없음\n"); // 선택된 유닛 정보
 }
 
 // 명령어를 표시하는 함수 (오른쪽 하단)
 void display_commands(void) {
     set_color(COLOR_DEFAULT);
     gotoxy(commands_pos);
-    printf("[Commands] Move | Attack | Defend | Gather\n");
+    printf("[명령어] 이동 | 공격 | 방어 | 자원 수집\n");
 }
 
 // 맵 데이터 병합 함수
