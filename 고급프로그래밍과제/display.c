@@ -1,10 +1,3 @@
-/*
-*   display.c:
-* 화면에 게임 정보를 출력
-* 맵, 커서, 시스템 메시지, 정보창, 자원 상태 등등
-* io.c에 있는 함수들을 사용함
-*/
-
 #include "display.h"
 #include "io.h"
 
@@ -18,7 +11,7 @@ const POSITION commands_pos = { 19, 65 };       // 명령창 위치 (상태창 아래에 위
 char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
 char frontbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
 
-// 함수 정의
+// 맵을 그리기 위해 사용될 함수들
 void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP_WIDTH]);
 void display_resource(RESOURCE resource);
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
@@ -47,31 +40,28 @@ void display(
 
 // 자원 상태 출력 함수
 void display_resource(RESOURCE resource) {
-    set_color(COLOR_RESOURCE);
+    set_color(COLOR_RESOURCE);  // 스파이스 색상
     gotoxy(resource_pos);
-    printf("스파이스 = %d/%d, 인구 = %d/%d\n",
-        resource.spice, resource.spice_max,
-        resource.population, resource.population_max
-    );
+    printf("스파이스 = %d/%d, 인구 = %d/%d\n", resource.spice, resource.spice_max, resource.population, resource.population_max);
 }
 
 // 시스템 메시지를 표시하는 함수 (하단 중앙)
 void display_system_message(void) {
-    set_color(COLOR_DEFAULT);
+    set_color(COLOR_DEFAULT);  // 회색 (기본 텍스트 색)
     gotoxy(system_message_pos);
-    printf("[시스템 메시지] 모든 시스템이 정상 작동 중입니다\n"); // 예시 메시지
+    printf("[시스템 메시지] 모든 시스템이 정상 작동 중입니다\n");
 }
 
 // 선택된 유닛/건물의 정보를 표시하는 함수 (오른쪽 상단)
 void display_status(void) {
-    set_color(COLOR_DEFAULT);
+    set_color(COLOR_DEFAULT);  // 회색 (기본 텍스트 색)
     gotoxy(status_pos);
-    printf("[상태] 선택된 유닛: 없음\n"); // 선택된 유닛 정보
+    printf("[상태] 선택된 유닛: 없음\n");
 }
 
 // 명령어를 표시하는 함수 (오른쪽 하단)
 void display_commands(void) {
-    set_color(COLOR_DEFAULT);
+    set_color(COLOR_DEFAULT);  // 회색 (기본 텍스트 색)
     gotoxy(commands_pos);
     printf("[명령어] 이동 | 공격 | 방어 | 자원 수집\n");
 }
@@ -97,12 +87,27 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
         for (int j = 0; j < MAP_WIDTH; j++) {
             if (frontbuf[i][j] != backbuf[i][j]) {
                 POSITION pos = { i, j };
-                printc(padd(map_pos, pos), backbuf[i][j], COLOR_DEFAULT);
+                int color = COLOR_DEFAULT;
+
+                // 특정 캐릭터에 따라 색상 설정
+                switch (backbuf[i][j]) {
+                case 'B': color = COLOR_BLUE; break; // 본부를 파란색으로 표시
+                case 'H': color = COLOR_BLUE; break;
+                case '5': color = COLOR_RED; break;
+                case 'P': color = COLOR_WHITE; break;
+                case 'W': color = COLOR_YELLOW; break;
+                case 'R': color = COLOR_GRAY; break;
+                case '#': color = COLOR_WHITE; break;
+                default: color = COLOR_DEFAULT; break;
+                }
+
+                printc(padd(map_pos, pos), backbuf[i][j], color);
             }
             frontbuf[i][j] = backbuf[i][j];
         }
     }
 }
+
 
 // 커서 위치 표시 함수
 void display_cursor(CURSOR cursor) {
