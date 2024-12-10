@@ -1,4 +1,6 @@
-﻿#include <stdlib.h>
+﻿
+
+#include <stdlib.h>
 #include <time.h>
 #include <assert.h>
 #include "common.h"
@@ -69,7 +71,7 @@ int main(void) {
         }
 
         // 샘플 오브젝트 동작
-        sample_obj_move();
+        //sample_obj_move();
 
         // 화면 출력
         display(resource, map, cursor);
@@ -200,53 +202,68 @@ void handle_selection(void) {
     POSITION curr = cursor.current;
     char repr = map[0][curr.row][curr.column]; // 현재 커서 위치의 객체
 
-    if (!selected_state.is_selected) {
-        // 선택되지 않은 상태에서 Space 키 입력
-        selected_state.is_selected = true;
-        selected_state.pos = curr;
-        selected_state.repr = repr;
-    }
-    else {
-        // 이미 선택된 상태에서 Space 키 입력
-        // 같은 위치의 유닛을 다시 선택한 경우 상태를 유지
+    // 선택된 상태일 때
+    if (selected_state.is_selected) {
+        // 같은 위치의 유닛/지형을 다시 선택한 경우
         if (selected_state.pos.row == curr.row && selected_state.pos.column == curr.column) {
-            selected_state.is_selected = false;
+            selected_state.is_selected = false; // 선택 해제
         }
         else {
-            // 다른 위치의 유닛 선택
+            // 다른 위치의 유닛/지형을 선택한 경우 즉시 업데이트
             selected_state.pos = curr;
             selected_state.repr = repr;
         }
+    }
+    else {
+        // 선택되지 않은 상태일 때 바로 갱신
+        selected_state.is_selected = true;
+        selected_state.pos = curr;
+        selected_state.repr = repr;
     }
 
     // 선택 상태를 즉시 상태창에 출력
     display_selection();
 }
-    
+
+
 void display_selection(void) {
+    // 상태창 위치로 이동
     gotoxy(status_pos);
+
+    // 상태창을 초기화 (빈 공간으로 덮어쓰기)
+    printf("                                    \n"); // 상태창의 이전 출력 지우기
+    gotoxy(status_pos); // 다시 상태창 위치로 이동
+
     if (selected_state.is_selected) {
         char repr = selected_state.repr;
         if (repr == ' ') {
             printf("[상태] 선택된 지형: 사막\n");
         }
         else if (repr == 'B') {
-            printf("[상태] 선택된 유닛: 본부 (Base)\n[명령어] 이동 | 공격 | 방어\n");
+            printf("[상태] 선택된 유닛: 본부 (Base)\n");
         }
         else if (repr == 'H') {
-            printf("[상태] 선택된 유닛: 하베스터 (Harvester)\n[명령어] 자원 수집 | 이동\n");
+            printf("[상태] 선택된 유닛: 하베스터 (Harvester)\n");
         }
         else if (repr == '5') {
             printf("[상태] 선택된 지형: 스파이스 매장지\n");
+        }
+        else if (repr == 'R') {
+            printf("[상태] 선택된 지형: 바위\n");
+        }
+        else if (repr == 'P') {
+            printf("[상태] 선택된 지형: 장판\n");
+        }
+        else if (repr == 'W') {
+            printf("[상태] 선택된 유닛: 샌드웜\n");
         }
         else {
             printf("[상태] 알 수 없는 객체: [%c]\n", repr);
         }
     }
-    else {
-        printf("[상태] 선택된 유닛: 없음\n");
-    }
+
 }
+
 
 
 

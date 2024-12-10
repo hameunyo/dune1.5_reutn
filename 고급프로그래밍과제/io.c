@@ -9,15 +9,15 @@ void gotoxy(POSITION pos) {
 }
 
 void set_color(int color) {
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 }
 
 void printc(POSITION pos, char ch, int color) {
-	if (color >= 0) {
-		set_color(color);
-	}
-	gotoxy(pos);
-	printf("%c", ch);
+    if (color >= 0) {
+        set_color(color);
+    }
+    gotoxy(pos);
+    printf("%c", ch);
 }
 
 KEY get_key(void) {
