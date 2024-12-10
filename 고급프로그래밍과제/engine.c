@@ -9,13 +9,24 @@
 void init(void);
 void intro(void);
 void outro(void);
-void cursor_move_with_double_click(KEY key);
+void cursor_move(DIRECTION dir);
+void handle_selection(void); // 선택 처리 함수 선언
 void sample_obj_move(void);
 POSITION sample_obj_next_position(void);
+void display_selection(void); // 선택 상태 출력 함수 선언
 
 // ================= control ===================
 int sys_clock = 0;       // system-wide clock(ms)
 CURSOR cursor = { { 1, 1 }, {1, 1} };
+
+// 선택 상태를 관리하기 위한 구조체
+typedef struct {
+    bool is_selected;   // 선택 여부
+    POSITION pos;       // 선택된 위치
+    char repr;          // 선택된 객체의 문자
+} SELECTED_STATE;
+
+SELECTED_STATE selected_state = { false, { -1, -1 }, '\0' };
 
 // ================= game data ===================
 char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -35,14 +46,6 @@ OBJECT_SAMPLE obj = {
     .next_move_time = 300
 };
 
-// 키 입력 상태 저장
-typedef struct {
-    clock_t last_time;  // 마지막 키 입력 시간
-    KEY last_key;       // 마지막 입력된 키
-} KEY_STATE;
-
-KEY_STATE key_state = { 0, k_none };
-
 // ================= main() ===================
 int main(void) {
     srand((unsigned int)time(NULL));
@@ -52,19 +55,15 @@ int main(void) {
     display(resource, map, cursor);
 
     while (1) {
-        // loop 돌 때마다(즉, TICK==10ms마다) 키 입력 확인
         KEY key = get_key();
 
-        // 키 입력이 있으면 처리
         if (is_arrow_key(key)) {
-            cursor_move_with_double_click(key);
+            cursor_move(ktod(key));
         }
         else {
-            // 방향키 외의 입력
             switch (key) {
-            case k_quit: outro();
-            case k_none:
-            case k_undef:
+            case k_space: handle_selection(); break; // Space 키 입력 처리
+            case k_quit: outro(); break;
             default: break;
             }
         }
@@ -161,55 +160,100 @@ void init(void) {
     map[0][15][55] = 'R';
 }
 
-// 방향키 더블클릭 감지 함수
-bool is_double_click(KEY key) {
-    clock_t current_time = clock();
-    bool double_click = false;
+void cursor_move(DIRECTION dir) {
+    POSITION curr = cursor.current;
+    POSITION new_pos;
 
-    if (key == key_state.last_key) {
-        // 200ms 이내에 동일한 키가 두 번 입력되었는지 확인
-        if ((current_time - key_state.last_time) <= CLOCKS_PER_SEC / 5) {
-            double_click = true;
+    // 더블클릭 감지
+    static clock_t last_click_time = 0;
+    clock_t current_time = clock();
+    bool is_double_click = (current_time - last_click_time) <= CLOCKS_PER_SEC / 5; // 200ms 이내 더블클릭
+    last_click_time = current_time;
+
+    if (is_double_click) {
+        // 더블클릭 시 5칸 이동
+        new_pos = curr;
+        for (int i = 0; i < 5; i++) {
+            new_pos = pmove(new_pos, dir);
+            // 맵 경계를 초과하지 않도록 확인
+            if (!(1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 &&
+                1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2)) {
+                break;
+            }
         }
     }
-
-    // 키 상태 업데이트
-    key_state.last_time = current_time;
-    key_state.last_key = key;
-
-    return double_click;
-}
-
-// 방향키 입력 처리 함수
-void cursor_move_with_double_click(KEY key) {
-    DIRECTION dir = ktod(key);
-    POSITION new_pos = cursor.current;
-
-    if (is_double_click(key)) {
-        // 더블클릭 시 두 칸 이동
-        new_pos = pmove(pmove(cursor.current, dir), dir);
-    }
     else {
-        // 일반 클릭 시 한 칸 이동
-        new_pos = pmove(cursor.current, dir);
+        // 일반 클릭 시 1칸 이동
+        new_pos = pmove(curr, dir);
     }
 
-    // 경계 검사
+    // 이동한 위치가 유효한 경우 업데이트
     if (1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 &&
         1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2) {
-
-        // 이전 위치 초기화 및 새 위치 업데이트
         cursor.previous = cursor.current;
         cursor.current = new_pos;
     }
 }
 
-// 샘플 오브젝트 동작
+
+void handle_selection(void) {
+    POSITION curr = cursor.current;
+    char repr = map[0][curr.row][curr.column]; // 현재 커서 위치의 객체
+
+    if (!selected_state.is_selected) {
+        // 선택되지 않은 상태에서 Space 키 입력
+        selected_state.is_selected = true;
+        selected_state.pos = curr;
+        selected_state.repr = repr;
+    }
+    else {
+        // 이미 선택된 상태에서 Space 키 입력
+        // 같은 위치의 유닛을 다시 선택한 경우 상태를 유지
+        if (selected_state.pos.row == curr.row && selected_state.pos.column == curr.column) {
+            selected_state.is_selected = false;
+        }
+        else {
+            // 다른 위치의 유닛 선택
+            selected_state.pos = curr;
+            selected_state.repr = repr;
+        }
+    }
+
+    // 선택 상태를 즉시 상태창에 출력
+    display_selection();
+}
+    
+void display_selection(void) {
+    gotoxy(status_pos);
+    if (selected_state.is_selected) {
+        char repr = selected_state.repr;
+        if (repr == ' ') {
+            printf("[상태] 선택된 지형: 사막\n");
+        }
+        else if (repr == 'B') {
+            printf("[상태] 선택된 유닛: 본부 (Base)\n[명령어] 이동 | 공격 | 방어\n");
+        }
+        else if (repr == 'H') {
+            printf("[상태] 선택된 유닛: 하베스터 (Harvester)\n[명령어] 자원 수집 | 이동\n");
+        }
+        else if (repr == '5') {
+            printf("[상태] 선택된 지형: 스파이스 매장지\n");
+        }
+        else {
+            printf("[상태] 알 수 없는 객체: [%c]\n", repr);
+        }
+    }
+    else {
+        printf("[상태] 선택된 유닛: 없음\n");
+    }
+}
+
+
+
 POSITION sample_obj_next_position(void) {
     POSITION diff = psub(obj.dest, obj.pos);
     DIRECTION dir;
 
-    // 목적지 도착 시 왕복
     if (diff.row == 0 && diff.column == 0) {
         if (obj.dest.row == 1 && obj.dest.column == 1) {
             obj.dest = (POSITION){ MAP_HEIGHT - 2, MAP_WIDTH - 2 };
@@ -220,7 +264,6 @@ POSITION sample_obj_next_position(void) {
         return obj.pos;
     }
 
-    // 이동 방향 결정
     if (abs(diff.row) >= abs(diff.column)) {
         dir = (diff.row >= 0) ? d_down : d_up;
     }

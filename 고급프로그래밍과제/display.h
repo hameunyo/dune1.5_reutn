@@ -23,7 +23,14 @@
 #define COLOR_GRAY     8  // 회색
 #define COLOR_BROWN    6  // 갈색
 
+// 출력 위치 상수 (외부 참조 가능)
+extern const POSITION resource_pos;        // 자원 상태
+extern const POSITION map_pos;             // 맵 위치
+extern const POSITION system_message_pos;  // 시스템 메시지 위치
+extern const POSITION status_pos;          // 상태창 위치
+extern const POSITION commands_pos;        // 명령창 위치
 
+// 화면 출력 함수 선언
 void display(
     RESOURCE resource,
     char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],

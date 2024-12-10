@@ -1,12 +1,13 @@
 #include "display.h"
 #include "io.h"
 
-// 출력할 내용들의 좌상단(topleft) 좌표
-const POSITION resource_pos = { 0, 0 };         // 자원 상태
-const POSITION map_pos = { 1, 0 };              // 맵 위치
-const POSITION system_message_pos = { 19, 0 };  // 시스템 메시지 위치
-const POSITION status_pos = { 1, 65 };          // 상태창 위치 (맵 오른쪽에 위치)
-const POSITION commands_pos = { 19, 65 };       // 명령창 위치 (상태창 아래에 위치)
+// 출력 위치 상수
+const POSITION resource_pos = { 0, 0 };
+const POSITION map_pos = { 1, 0 };
+const POSITION system_message_pos = { 19, 0 };
+const POSITION status_pos = { 1, 65 };
+const POSITION commands_pos = { 19, 65 };
+
 
 char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
 char frontbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -23,19 +24,14 @@ void display_commands(void);
 void display(
     RESOURCE resource,
     char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],
-    CURSOR cursor)
-{
-    // 자원 상태 출력
+    CURSOR cursor
+) {
     display_resource(resource);
-
-    // 맵 및 커서 출력
     display_map(map);
     display_cursor(cursor);
-
-    // 시스템 메시지, 상태창, 명령창 각각 출력
     display_system_message();
-    display_status();
     display_commands();
+    display_selection(); // 선택 상태 출력
 }
 
 // 자원 상태 출력 함수
@@ -114,9 +110,26 @@ void display_cursor(CURSOR cursor) {
     POSITION prev = cursor.previous;
     POSITION curr = cursor.current;
 
-    char ch = frontbuf[prev.row][prev.column];
-    printc(padd(map_pos, prev), ch, COLOR_DEFAULT);
+    // 이전 위치의 캐릭터에 따라 색상 복원
+    char prev_ch = frontbuf[prev.row][prev.column];
+    int prev_color = COLOR_DEFAULT;
 
-    ch = frontbuf[curr.row][curr.column];
-    printc(padd(map_pos, curr), ch, COLOR_CURSOR);
+    // 캐릭터에 따른 색상 복원
+    switch (prev_ch) {
+    case 'B': prev_color = COLOR_BLUE; break;  // 본부
+    case 'H': prev_color = COLOR_BLUE; break;  // 하베스터
+    case '5': prev_color = COLOR_RED; break;   // 스파이스 매장지
+    case 'P': prev_color = COLOR_WHITE; break; // 장판
+    case 'W': prev_color = COLOR_YELLOW; break; // 샌드웜
+    case 'R': prev_color = COLOR_GRAY; break;   // 바위
+    case '#': prev_color = COLOR_WHITE; break;  // 테두리
+    default: prev_color = COLOR_DEFAULT; break;
+    }
+
+    // 이전 위치의 색상과 문자 복원
+    printc(padd(map_pos, prev), prev_ch, prev_color);
+
+    // 현재 커서 위치 표시
+    char curr_ch = frontbuf[curr.row][curr.column];
+    printc(padd(map_pos, curr), curr_ch, COLOR_CURSOR);
 }
